@@ -1,0 +1,63 @@
+{
+  "title": "Server Monitor",
+  "timezone": "Asia/Bangkok",
+  "refresh": "30s",
+  "schemaVersion": 36,
+  "panels": [
+    {
+      "id": 50,
+      "title": "📊 Overview",
+      "type": "marcusolsson-dynamictext-panel",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 2 },
+      "options": {
+        "content": "<div style=\"display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;background:linear-gradient(135deg,#001845,#002865);border-radius:8px;\"><div style=\"color:#fff;font-size:1.1rem;font-weight:700;\">🖥️ Monitoring Dashboard</div><div id=\"ov-clock\" style=\"color:rgba(255,255,255,0.6);font-size:0.8rem;\"></div></div>",
+        "editors": { "after": "const el=document.getElementById('ov-clock');function tick(){if(el)el.textContent='Last updated: '+new Date().toLocaleTimeString('th-TH');}tick();const t=setInterval(tick,10000);return()=>clearInterval(t);" },
+        "renderMode": "data"
+      }
+    },
+    {
+      "id": 51,
+      "title": "Summary Stats",
+      "type": "marcusolsson-dynamictext-panel",
+      "gridPos": { "x": 0, "y": 2, "w": 24, "h": 3 },
+      "options": {
+        "content": "<div id=\"summary-root\" style=\"display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem;padding:0.25rem 0;\"><div style=\"background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:0.75rem 1rem;\"><div style=\"font-size:0.7rem;color:rgba(255,255,255,0.5);margin-bottom:0.25rem;\">🖥️ Servers</div><div id=\"stat-servers\" style=\"font-size:1.4rem;font-weight:800;color:#3b82f6;\">...</div></div><div style=\"background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:0.75rem 1rem;\"><div style=\"font-size:0.7rem;color:rgba(255,255,255,0.5);margin-bottom:0.25rem;\">🔴 Down</div><div id=\"stat-down\" style=\"font-size:1.4rem;font-weight:800;color:#10b981;\">...</div></div><div style=\"background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:0.75rem 1rem;\"><div style=\"font-size:0.7rem;color:rgba(255,255,255,0.5);margin-bottom:0.25rem;\">🔌 Services Down</div><div id=\"stat-svcs\" style=\"font-size:1.4rem;font-weight:800;color:#10b981;\">...</div></div><div style=\"background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:0.75rem 1rem;\"><div style=\"font-size:0.7rem;color:rgba(255,255,255,0.5);margin-bottom:0.25rem;\">🔔 Alerts</div><div id=\"stat-alerts\" style=\"font-size:1.4rem;font-weight:800;color:#10b981;\">...</div></div></div>",
+        "editors": { "after": "const P='http://172.29.0.95:9090';const q=e=>fetch(P+'/api/v1/query?query='+encodeURIComponent(e)).then(r=>r.json()).then(d=>d.data&&d.data.result||[]).catch(()=>[]);async function load(){const[a,b,c,d,e]=await Promise.all([q('count(up)'),q('count(up==0)'),q('count(probe_success{service_name!=\"\"})'),q('count(probe_success{service_name!=\"\"}==0)'),q('ALERTS{alertstate=\"firing\"}')]);const sv=a[0]?a[0].value[1]:'-';const dn=b[0]?b[0].value[1]:'0';const sd=d[0]?d[0].value[1]:'0';const al=e.length;const e1=document.getElementById('stat-servers');if(e1)e1.textContent=sv;const de=document.getElementById('stat-down');if(de){de.textContent=dn;de.style.color=dn>0?'#ef4444':'#10b981';}const se=document.getElementById('stat-svcs');if(se){se.textContent=sd+' Down';se.style.color=sd>0?'#f59e0b':'#10b981';}const ae=document.getElementById('stat-alerts');if(ae){ae.textContent=al+' Active';ae.style.color=al>0?'#ef4444':'#10b981';}}load();const t=setInterval(load,30000);return()=>clearInterval(t);" },
+        "renderMode": "data"
+      }
+    },
+    {
+      "id": 52,
+      "title": "🖥️ Server List",
+      "type": "marcusolsson-dynamictext-panel",
+      "gridPos": { "x": 0, "y": 5, "w": 16, "h": 10 },
+      "options": {
+        "content": "<div id=\"slist-root\"><table style=\"width:100%;border-collapse:collapse;font-size:0.82rem;\"><thead><tr style=\"background:rgba(255,255,255,0.05);\"><th style=\"padding:0.5rem 0.75rem;text-align:left;color:rgba(255,255,255,0.5);font-size:0.7rem;font-weight:700;text-transform:uppercase;\">Server</th><th style=\"padding:0.5rem 0.75rem;text-align:center;color:rgba(255,255,255,0.5);font-size:0.7rem;font-weight:700;text-transform:uppercase;\">Status</th><th style=\"padding:0.5rem 0.75rem;text-align:center;color:rgba(255,255,255,0.5);font-size:0.7rem;font-weight:700;text-transform:uppercase;\">CPU</th><th style=\"padding:0.5rem 0.75rem;text-align:center;color:rgba(255,255,255,0.5);font-size:0.7rem;font-weight:700;text-transform:uppercase;\">RAM</th><th style=\"padding:0.5rem 0.75rem;text-align:center;color:rgba(255,255,255,0.5);font-size:0.7rem;font-weight:700;text-transform:uppercase;\">Services</th></tr></thead><tbody id=\"slist-body\"><tr><td colspan=\"5\" style=\"padding:1rem;text-align:center;color:rgba(255,255,255,0.3);\">กำลังโหลด...</td></tr></tbody></table></div>",
+        "editors": { "after": "const P='http://172.29.0.95:9090';const servers=[{name:'PC-ME',cpu:'100-(avg by(server_name)(rate(windows_cpu_time_total{mode=\"idle\",server_name=\"PC-ME\"}[2m]))*100)',ram:'100-(windows_memory_physical_free_bytes{server_name=\"PC-ME\"}/windows_memory_physical_total_bytes{server_name=\"PC-ME\"}*100)',svc:'host.docker.internal'},{name:'PC-IT',cpu:'100-(avg by(server_name)(rate(windows_cpu_time_total{mode=\"idle\",server_name=\"PC-IT\"}[2m]))*100)',ram:'100-(windows_memory_physical_free_bytes{server_name=\"PC-IT\"}/windows_memory_physical_total_bytes{server_name=\"PC-IT\"}*100)',svc:'172.29.1.61'},{name:'Server',cpu:'100-(avg by(server_name)(rate(node_cpu_seconds_total{mode=\"idle\",server_name=\"Server\"}[2m]))*100)',ram:'100-(node_memory_MemAvailable_bytes{server_name=\"Server\"}/node_memory_MemTotal_bytes{server_name=\"Server\"}*100)',svc:'172.17.0.12'}];const q=e=>fetch(P+'/api/v1/query?query='+encodeURIComponent(e)).then(r=>r.json()).then(d=>d.data&&d.data.result||[]).catch(()=>[]);const v=r=>r[0]?parseFloat(r[0].value[1]).toFixed(1):null;const sc=(c,r)=>c===null&&r===null?{t:'DOWN',c:'#ef4444'}:(c>=85||r>=85)?{t:'WARN',c:'#f59e0b'}:{t:'UP',c:'#10b981'};async function load(){const rows=await Promise.all(servers.map(async s=>{const[c,r,sv]=await Promise.all([q(s.cpu),q(s.ram),q('probe_success{instance=~\"'+s.svc+'.*\"}')]);const cpu=v(c),ram=v(r);const up=sv.filter(x=>x.value[1]==='1').length;return{name:s.name,cpu,ram,up,total:sv.length,st:sc(cpu,ram)};}));const tb=document.getElementById('slist-body');if(tb)tb.innerHTML=rows.map(r=>'<tr style=\"border-top:1px solid rgba(255,255,255,0.05);cursor:pointer;\" onclick=\"window.location.href=window.location.origin+'/d/server-detail?var-server='+encodeURIComponent(r.name)\"><td style=\"padding:0.6rem 0.75rem;color:#fff;font-weight:600;\">'+r.name+'</td><td style=\"padding:0.6rem 0.75rem;text-align:center;\"><span style=\"background:'+r.st.c+'22;color:'+r.st.c+';border-radius:6px;padding:0.15rem 0.5rem;font-size:0.72rem;font-weight:700;\">'+r.st.t+'</span></td><td style=\"padding:0.6rem 0.75rem;text-align:center;color:'+(r.cpu>=85?'#ef4444':r.cpu>=70?'#f59e0b':'#10b981')+';\">'+( r.cpu!==null?r.cpu+'%':'—')+'</td><td style=\"padding:0.6rem 0.75rem;text-align:center;color:'+(r.ram>=85?'#ef4444':r.ram>=70?'#f59e0b':'#10b981')+';\">'+( r.ram!==null?r.ram+'%':'—')+'</td><td style=\"padding:0.6rem 0.75rem;text-align:center;color:'+(r.up<r.total?'#f59e0b':'#10b981')+';\">'+r.up+'/'+r.total+' UP</td></tr>').join('');}load();const t=setInterval(load,30000);return()=>clearInterval(t);" },
+        "renderMode": "data"
+      }
+    },
+    {
+      "id": 53,
+      "title": "🔔 Telegram Alerts",
+      "type": "marcusolsson-dynamictext-panel",
+      "gridPos": { "x": 16, "y": 5, "w": 8, "h": 10 },
+      "options": {
+        "content": "<div id=\"tg-root\"><div style=\"font-size:0.7rem;color:rgba(255,255,255,0.4);text-transform:uppercase;font-weight:700;margin-bottom:0.5rem;\">Toggle per server</div><div id=\"tg-list\"></div></div><div id=\"tg-toast\" style=\"display:none;margin-top:0.5rem;padding:0.4rem 0.75rem;border-radius:8px;font-size:0.75rem;font-weight:600;\"></div>",
+        "editors": { "after": "const AM='http://172.29.0.95:9093';const servers=['PC-ME','PC-IT','Server'];const getSilences=()=>fetch(AM+'/api/v2/silences').then(r=>r.json()).catch(()=>[]);const isMuted=(sl,s)=>sl.some(x=>x.status&&x.status.state==='active'&&x.matchers&&x.matchers.some(m=>m.name==='server_name'&&m.value===s));const doSilence=s=>{const now=new Date();const end=new Date(now.getTime()+1000*3650*24*3600);return fetch(AM+'/api/v2/silences',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({matchers:[{name:'server_name',value:s,isRegex:false,isEqual:true}],startsAt:now.toISOString(),endsAt:end.toISOString(),createdBy:'grafana-dashboard',comment:'Muted from Dashboard'})}).then(r=>r.json());};const doUnsilence=async s=>{const sl=await getSilences();const a=sl.find(x=>x.status&&x.status.state==='active'&&x.matchers&&x.matchers.some(m=>m.name==='server_name'&&m.value===s));if(a)await fetch(AM+'/api/v2/silence/'+a.id,{method:'DELETE'});};const toast=(msg,ok)=>{const t=document.getElementById('tg-toast');if(!t)return;t.textContent=msg;t.style.display='block';t.style.background=ok?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)';t.style.color=ok?'#10b981':'#ef4444';setTimeout(()=>t.style.display='none',3000);};async function render(){const sl=await getSilences();const list=document.getElementById('tg-list');if(!list)return;list.innerHTML=servers.map(s=>{const m=isMuted(sl,s);return'<div style=\"display:flex;align-items:center;justify-content:space-between;padding:0.55rem 0.7rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:9px;margin-bottom:0.4rem;\"><div><div style=\"color:#fff;font-size:0.82rem;font-weight:600;\">'+s+'</div><div style=\"font-size:0.68rem;color:'+(m?'#f59e0b':'#10b981')+';\">'+( m?'🔕 ปิดแจ้งเตือน':'🔔 เปิดแจ้งเตือน')+'</div></div><label style=\"position:relative;width:40px;height:22px;cursor:pointer;\"><input type=\"checkbox\" '+(m?'':'checked')+' style=\"opacity:0;width:0;height:0;\" data-server=\"'+s+'\" class=\"tg-cb\"><span style=\"position:absolute;inset:0;background:'+(m?'#475569':'#10b981')+';border-radius:22px;transition:.3s;\"><span style=\"position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:3px;left:'+(m?'3':'21')+'px;transition:.3s;\"></span></span></label></div>';}).join('');document.querySelectorAll('.tg-cb').forEach(cb=>{cb.addEventListener('change',async function(){const s=this.dataset.server;try{if(!this.checked){await doSilence(s);toast('ปิดแจ้งเตือน '+s+' แล้ว',false);}else{await doUnsilence(s);toast('เปิดแจ้งเตือน '+s+' แล้ว',true);}setTimeout(render,800);}catch(e){this.checked=!this.checked;toast('Error: '+e.message,false);}});});}render();const t=setInterval(render,30000);return()=>clearInterval(t);" },
+        "renderMode": "data"
+      }
+    },
+    {
+      "id": 54,
+      "title": "🚨 Recent Alerts",
+      "type": "marcusolsson-dynamictext-panel",
+      "gridPos": { "x": 0, "y": 15, "w": 24, "h": 5 },
+      "options": {
+        "content": "<div id=\"alerts-root\" style=\"padding:0.25rem 0;\"></div>",
+        "editors": { "after": "const P='http://172.29.0.95:9090';async function load(){const res=await fetch(P+'/api/v1/query?query='+encodeURIComponent('ALERTS{alertstate=\"firing\"}')).then(r=>r.json()).then(d=>d.data&&d.data.result||[]).catch(()=>[]);const root=document.getElementById('alerts-root');if(!root)return;if(res.length===0){root.innerHTML='<div style=\"text-align:center;padding:1rem;color:rgba(255,255,255,0.3);font-size:0.82rem;\">✅ ไม่มี active alerts</div>';return;}root.innerHTML='<div style=\"display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0.6rem;\">'+res.map(a=>{const sev=a.metric.severity||'warning';const color=sev==='critical'?'#ef4444':'#f59e0b';return'<div style=\"background:'+color+'18;border:1px solid '+color+'44;border-radius:9px;padding:0.6rem 0.85rem;\"><div style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:0.2rem;\"><span style=\"font-size:0.72rem;font-weight:700;color:'+color+';\">'+( sev==='critical'?'🔴':'🟡')+' '+sev.toUpperCase()+'</span><span style=\"font-size:0.68rem;color:rgba(255,255,255,0.35);\">'+(a.metric.server_name||a.metric.service_name||'')+'</span></div><div style=\"font-size:0.8rem;font-weight:600;color:#fff;\">'+(a.metric.alertname||'Alert')+'</div></div>';}).join('')+'</div>';}load();const t=setInterval(load,30000);return()=>clearInterval(t);" },
+        "renderMode": "data"
+      }
+    }
+  ]
+}

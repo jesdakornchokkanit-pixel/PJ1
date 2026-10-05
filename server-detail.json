@@ -1,0 +1,115 @@
+{
+  "title": "Server Detail",
+  "uid": "server-detail",
+  "timezone": "Asia/Bangkok",
+  "refresh": "30s",
+  "schemaVersion": 36,
+  "templating": {
+    "list": [
+      {
+        "name": "server",
+        "type": "custom",
+        "label": "Server",
+        "query": "PC-ME : PC-ME, PC-IT : PC-IT, Server : Server",
+        "current": { "text": "PC-ME", "value": "PC-ME" },
+        "options": [
+          {"text": "PC-ME", "value": "PC-ME", "selected": true},
+          {"text": "PC-IT", "value": "PC-IT", "selected": false},
+          {"text": "Server", "value": "Server", "selected": false}
+        ]
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "ℹ️ Server Info",
+      "type": "marcusolsson-dynamictext-panel",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 3 },
+      "options": {
+        "content": "<div id=\"info-root\" style=\"display:flex;align-items:center;justify-content:space-between;padding:0.6rem 1rem;background:linear-gradient(135deg,#001845,#002865);border-radius:8px;\"><div style=\"color:#fff;font-size:1.15rem;font-weight:700;\">🖥️ <span id=\"info-name\">-</span></div><div id=\"info-status\" style=\"font-size:0.85rem;font-weight:700;padding:0.2rem 0.8rem;border-radius:6px;\">-</div></div>",
+        "editors": { "after": "const P='http://172.29.0.95:9090';const server='${server}';const cfg={'PC-ME':{cpu:'100-(avg by(server_name)(rate(windows_cpu_time_total{mode=\"idle\",server_name=\"PC-ME\"}[2m]))*100)',ram:'100-(windows_memory_physical_free_bytes{server_name=\"PC-ME\"}/windows_memory_physical_total_bytes{server_name=\"PC-ME\"}*100)',svc:'host.docker.internal'},'PC-IT':{cpu:'100-(avg by(server_name)(rate(windows_cpu_time_total{mode=\"idle\",server_name=\"PC-IT\"}[2m]))*100)',ram:'100-(windows_memory_physical_free_bytes{server_name=\"PC-IT\"}/windows_memory_physical_total_bytes{server_name=\"PC-IT\"}*100)',svc:'172.29.1.61'},'Server':{cpu:'100-(avg by(server_name)(rate(node_cpu_seconds_total{mode=\"idle\",server_name=\"Server\"}[2m]))*100)',ram:'100-(node_memory_MemAvailable_bytes{server_name=\"Server\"}/node_memory_MemTotal_bytes{server_name=\"Server\"}*100)',svc:'172.17.0.12'}};const c=cfg[server]||cfg['PC-ME'];const q=e=>fetch(P+'/api/v1/query?query='+encodeURIComponent(e)).then(r=>r.json()).then(d=>d.data&&d.data.result||[]).catch(()=>[]);const v=r=>r[0]?parseFloat(r[0].value[1]).toFixed(1):null;async function load(){const[cp,rm,sv]=await Promise.all([q(c.cpu),q(c.ram),q('probe_success{instance=~\"'+c.svc+'.*\"}')]);const cpu=v(cp),ram=v(rm);const up=sv.filter(x=>x.value[1]==='1').length;const total=sv.length;const nameEl=document.getElementById('info-name');if(nameEl)nameEl.textContent=server;const st=document.getElementById('info-status');if(!st)return;if(cpu===null&&ram===null){st.textContent='DOWN';st.style.background='#ef444422';st.style.color='#ef4444';}else if(cpu>=85||ram>=85||up<total){st.textContent='WARN';st.style.background='#f59e0b22';st.style.color='#f59e0b';}else{st.textContent='UP';st.style.background='#10b98122';st.style.color='#10b981';}}load();const t=setInterval(load,30000);return()=>clearInterval(t);" },
+        "renderMode": "data"
+      }
+    },
+    {
+      "id": 11,
+      "title": "CPU Usage %",
+      "type": "gauge",
+      "gridPos": { "x": 0, "y": 3, "w": 8, "h": 5 },
+      "targets": [
+        {"expr": "100 - (avg by(server_name) (rate(windows_cpu_time_total{mode='idle',server_name=~'$server'}[2m])) * 100)", "legendFormat": "{{server_name}}", "datasource": "prometheus"},
+        {"expr": "100 - (avg by(server_name, instance) (rate(node_cpu_seconds_total{mode='idle',server_name=~'$server'}[2m])) * 100)", "legendFormat": "{{server_name}}", "datasource": "prometheus"}
+      ],
+      "fieldConfig": {"defaults": {"min": 0, "max": 100, "unit": "percent", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": 0}, {"color": "yellow", "value": 70}, {"color": "red", "value": 85}]}}}
+    },
+    {
+      "id": 12,
+      "title": "RAM Usage %",
+      "type": "gauge",
+      "gridPos": { "x": 8, "y": 3, "w": 8, "h": 5 },
+      "targets": [
+        {"expr": "100 - (windows_memory_physical_free_bytes{server_name=~'$server'} / windows_memory_physical_total_bytes{server_name=~'$server'} * 100)", "legendFormat": "{{server_name}}", "datasource": "prometheus"},
+        {"expr": "100 - (node_memory_MemAvailable_bytes{server_name=~'$server'} / node_memory_MemTotal_bytes{server_name=~'$server'} * 100)", "legendFormat": "{{server_name}}", "datasource": "prometheus"}
+      ],
+      "fieldConfig": {"defaults": {"min": 0, "max": 100, "unit": "percent", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": 0}, {"color": "yellow", "value": 70}, {"color": "red", "value": 85}]}}}
+    },
+    {
+      "id": 13,
+      "title": "Disk Usage %",
+      "type": "gauge",
+      "gridPos": { "x": 16, "y": 3, "w": 8, "h": 5 },
+      "targets": [
+        {"expr": "100 - (windows_logical_disk_free_bytes{volume='C:',server_name=~'$server'} / windows_logical_disk_size_bytes{volume='C:',server_name=~'$server'} * 100)", "legendFormat": "{{server_name}} C:", "datasource": "prometheus"},
+        {"expr": "100 - (node_filesystem_avail_bytes{mountpoint='/',server_name=~'$server'} / node_filesystem_size_bytes{mountpoint='/',server_name=~'$server'} * 100)", "legendFormat": "{{server_name}} /", "datasource": "prometheus"}
+      ],
+      "fieldConfig": {"defaults": {"min": 0, "max": 100, "unit": "percent", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": 0}, {"color": "yellow", "value": 70}, {"color": "red", "value": 85}]}}}
+    },
+    {
+      "id": 31,
+      "title": "CPU History",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 7 },
+      "targets": [
+        {"expr": "100 - (avg by(server_name) (rate(windows_cpu_time_total{mode='idle',server_name=~'$server'}[2m])) * 100)", "legendFormat": "{{server_name}}", "datasource": "prometheus"},
+        {"expr": "100 - (avg by(server_name, instance) (rate(node_cpu_seconds_total{mode='idle',server_name=~'$server'}[2m])) * 100)", "legendFormat": "{{server_name}}", "datasource": "prometheus"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}}
+    },
+    {
+      "id": 32,
+      "title": "RAM History",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 7 },
+      "targets": [
+        {"expr": "100 - (windows_memory_physical_free_bytes{server_name=~'$server'} / windows_memory_physical_total_bytes{server_name=~'$server'} * 100)", "legendFormat": "{{server_name}}", "datasource": "prometheus"},
+        {"expr": "100 - (node_memory_MemAvailable_bytes{server_name=~'$server'} / node_memory_MemTotal_bytes{server_name=~'$server'} * 100)", "legendFormat": "{{server_name}}", "datasource": "prometheus"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}}
+    },
+    {
+      "id": 33,
+      "title": "Network Bandwidth",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 15, "w": 24, "h": 7 },
+      "targets": [
+        {"expr": "rate(windows_net_bytes_received_total{server_name=~'$server'}[2m])", "legendFormat": "{{server_name}} RX — {{nic}}", "datasource": "prometheus"},
+        {"expr": "rate(windows_net_bytes_sent_total{server_name=~'$server'}[2m])", "legendFormat": "{{server_name}} TX — {{nic}}", "datasource": "prometheus"},
+        {"expr": "rate(node_network_receive_bytes_total{server_name=~'$server'}[2m])", "legendFormat": "{{server_name}} RX — {{device}}", "datasource": "prometheus"},
+        {"expr": "rate(node_network_transmit_bytes_total{server_name=~'$server'}[2m])", "legendFormat": "{{server_name}} TX — {{device}}", "datasource": "prometheus"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "Bps"}}
+    },
+    {
+      "id": 40,
+      "title": "🔌 Service Table",
+      "type": "marcusolsson-dynamictext-panel",
+      "gridPos": { "x": 0, "y": 22, "w": 24, "h": 6 },
+      "options": {
+        "content": "<div id=\"svc-root\"><table style=\"width:100%;border-collapse:collapse;font-size:0.82rem;\"><thead><tr style=\"background:rgba(255,255,255,0.05);\"><th style=\"padding:0.5rem 0.75rem;text-align:left;color:rgba(255,255,255,0.5);font-size:0.7rem;font-weight:700;text-transform:uppercase;\">Service</th><th style=\"padding:0.5rem 0.75rem;text-align:left;color:rgba(255,255,255,0.5);font-size:0.7rem;font-weight:700;text-transform:uppercase;\">Endpoint</th><th style=\"padding:0.5rem 0.75rem;text-align:center;color:rgba(255,255,255,0.5);font-size:0.7rem;font-weight:700;text-transform:uppercase;\">Status</th><th style=\"padding:0.5rem 0.75rem;text-align:center;color:rgba(255,255,255,0.5);font-size:0.7rem;font-weight:700;text-transform:uppercase;\">Response</th></tr></thead><tbody id=\"svc-body\"><tr><td colspan=\"4\" style=\"padding:1rem;text-align:center;color:rgba(255,255,255,0.3);\">กำลังโหลด...</td></tr></tbody></table></div>",
+        "editors": { "after": "const P='http://172.29.0.95:9090';const server='${server}';const svcMap={'PC-ME':'host.docker.internal','PC-IT':'172.29.1.61','Server':'172.17.0.12'};const filter=svcMap[server]||'host.docker.internal';const q=e=>fetch(P+'/api/v1/query?query='+encodeURIComponent(e)).then(r=>r.json()).then(d=>d.data&&d.data.result||[]).catch(()=>[]);async function load(){const[suc,dur]=await Promise.all([q('probe_success{instance=~\"'+filter+'.*\"}'),q('probe_duration_seconds{instance=~\"'+filter+'.*\"}')]);const durMap={};dur.forEach(d=>{durMap[d.metric.instance]=Math.round(parseFloat(d.value[1])*1000);});const tb=document.getElementById('svc-body');if(!tb)return;if(suc.length===0){tb.innerHTML='<tr><td colspan=\"4\" style=\"padding:1rem;text-align:center;color:rgba(255,255,255,0.3);\">ไม่พบข้อมูล services</td></tr>';return;}const rows=suc.slice().sort((a,b)=>(a.metric.service_name||'').localeCompare(b.metric.service_name||''));tb.innerHTML=rows.map(r=>{const up=r.value[1]==='1';const name=r.metric.service_name||r.metric.instance;const inst=r.metric.instance;const d=durMap[inst];const slow=d&&d>2000;return '<tr style=\"border-top:1px solid rgba(255,255,255,0.05);\"><td style=\"padding:0.6rem 0.75rem;color:#fff;font-weight:600;\">'+name+'</td><td style=\"padding:0.6rem 0.75rem;color:rgba(255,255,255,0.4);font-size:0.75rem;\">'+inst+'</td><td style=\"padding:0.6rem 0.75rem;text-align:center;\"><span style=\"background:'+(up?'#10b98122':'#ef444422')+';color:'+(up?'#10b981':'#ef4444')+';border-radius:6px;padding:0.15rem 0.5rem;font-size:0.72rem;font-weight:700;\">'+(up?'UP':'DOWN')+'</span></td><td style=\"padding:0.6rem 0.75rem;text-align:center;color:'+(slow?'#f59e0b':'rgba(255,255,255,0.5)')+';\">'+(d!==undefined?d+' ms':'—')+'</td></tr>';}).join('');}load();const t=setInterval(load,30000);return()=>clearInterval(t);" },
+        "renderMode": "data"
+      }
+    }
+  ]
+}
